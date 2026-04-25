@@ -4,6 +4,7 @@ import path from 'path';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
+import { GoogleGenAI } from "@google/genai";
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
 
@@ -92,9 +93,7 @@ async function startServer() {
     }
 
     try {
-      const genai = await import("@google/genai");
-      const genAI = new genai.GoogleGenerativeAI(apiKey);
-      const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+      const ai = new GoogleGenAI({ apiKey });
 
       const prompt = `
         Match Context: ${JSON.stringify(match)}
@@ -113,8 +112,12 @@ async function startServer() {
         }
       `;
 
-      const result = await model.generateContent(prompt);
-      const text = result.response.text();
+      const response = await ai.models.generateContent({
+        model: "gemini-3-flash-preview",
+        contents: prompt
+      });
+
+      const text = response.text || "";
       const cleaned = text.replace(/```json|```/g, '').trim();
       res.json(JSON.parse(cleaned));
     } catch (error) {
