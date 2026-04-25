@@ -1,0 +1,12 @@
+{
+  "name": "StadiumSync – IPL Edition",
+  "description": "A smart stadium transport management platform for IPL fans, featuring live match data, AI-powered travel predictions, and emergency SOS services.",
+  "requestFramePermissions": [
+    "geolocation"
+  ],
+  "majorCapabilities": [
+    "AI-powered Predictions",
+    "Real-time Transport Updates",
+    "User Authentication"
+  ]
+}
