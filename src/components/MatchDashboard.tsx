@@ -8,6 +8,14 @@ interface Props {
 }
 
 const MatchDashboard: React.FC<Props> = ({ match }) => {
+  if (!match || !match.score) {
+    return (
+      <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 flex items-center justify-center h-[200px]">
+        <div className="text-slate-400 font-bold uppercase tracking-widest animate-pulse">Initializing Feed...</div>
+      </div>
+    );
+  }
+
   const crr = (match.score.runs / Math.max(match.score.overs, 0.1)).toFixed(2);
   const runsRemaining = match.target - match.score.runs;
   const oversRemaining = 120 - (Math.floor(match.score.overs) * 6 + (match.score.overs % 1 * 10)); // Total balls remaining (approx)

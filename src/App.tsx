@@ -29,7 +29,7 @@ function DashboardContent({ match, prediction, predLoading, transport, powerSave
   };
 
   useEffect(() => {
-    if (match) {
+    if (match && match.score) {
       if (match.score.runs > 180) setMood('Euphoric');
       else if (match.score.wickets > 6) setMood('Anxious');
       else setMood('Excited');
@@ -86,7 +86,7 @@ function DashboardContent({ match, prediction, predLoading, transport, powerSave
          <div className="card-minimal flex flex-col items-center justify-center p-6 bg-indigo-50 border-indigo-100">
              <div className="text-[10px] font-black uppercase text-indigo-400 mb-2">Crowd Mood</div>
              <span className="text-2xl font-display font-black text-indigo-600">{mood}</span>
-             <p className="text-[10px] text-indigo-400 mt-1 uppercase font-bold tracking-widest italic">{match?.score.runs > 150 ? 'Fans staying for finish' : 'Movement detected'}</p>
+             <p className="text-[10px] text-indigo-400 mt-1 uppercase font-bold tracking-widest italic">{match?.score?.runs > 150 ? 'Fans staying for finish' : 'Movement detected'}</p>
          </div>
 
          <div className="card-minimal flex flex-col items-center justify-center p-6 bg-emerald-50 border-emerald-100">
@@ -300,9 +300,9 @@ function StadiumSelector({ onSelect }: { onSelect: (stadium: string) => void }) 
   const stadiums = [
     { name: "Wankhede Stadium", city: "Mumbai", image: "https://images.unsplash.com/photo-1540741285278-0661459e2f42?auto=format&fit=crop&q=80&w=400", outline: "M20 20C40 10 160 10 180 20C190 30 190 170 180 180C160 190 40 190 20 180C10 170 10 30 20 20Z" },
     { name: "Eden Gardens", city: "Kolkata", image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&q=80&w=400", outline: "M100 20 A 80 80 0 1 0 100 180 A 80 80 0 1 0 100 20" },
-    { name: "M. Chinnaswamy", city: "Bengaluru", image: "https://images.unsplash.com/photo-1540741285278-0661459e2f42?auto=format&fit=crop&q=80&w=400", outline: "M30 30L170 30L170 170L30 170Z" },
-    { name: "M. A. Chidambaram", city: "Chennai", image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&q=80&w=400", outline: "M50 20L150 20L180 100L150 180L50 180L20 100Z" },
-    { name: "Narendra Modi", city: "Ahmedabad", image: "https://images.unsplash.com/photo-1540741285278-0661459e2f42?auto=format&fit=crop&q=80&w=400", outline: "M100 10C150 10 190 50 190 100C190 150 150 190 100 190C50 190 10 150 10 100C10 50 50 10 100 10" }
+    { name: "M. Chinnaswamy Stadium", city: "Bengaluru", image: "https://images.unsplash.com/photo-1540741285278-0661459e2f42?auto=format&fit=crop&q=80&w=400", outline: "M30 30L170 30L170 170L30 170Z" },
+    { name: "M. A. Chidambaram Stadium", city: "Chennai", image: "https://images.unsplash.com/photo-1531415074968-036ba1b575da?auto=format&fit=crop&q=80&w=400", outline: "M50 20L150 20L180 100L150 180L50 180L20 100Z" },
+    { name: "Narendra Modi Stadium", city: "Ahmedabad", image: "https://images.unsplash.com/photo-1540741285278-0661459e2f42?auto=format&fit=crop&q=80&w=400", outline: "M100 10C150 10 190 50 190 100C190 150 150 190 100 190C50 190 10 150 10 100C10 50 50 10 100 10" }
   ];
 
   return (
@@ -382,18 +382,31 @@ function MainView() {
     const fetchData = async () => {
       try {
         const [matchRes, transportRes] = await Promise.all([
-          fetch('/api/match/live'),
-          fetch('/api/transport/status')
+          fetch('/api/match/live', { credentials: 'include' }),
+          fetch('/api/transport/status', { credentials: 'include' })
         ]);
-        const mData = await matchRes.json();
-        const tData = await transportRes.json();
-        
-        setMatch(mData);
-        setTransport(tData);
 
-        const pred = await predictMatchEnd(mData);
-        setPrediction(pred);
-        setPredLoading(false);
+        if (matchRes.status === 401) {
+          console.warn("Unauthorized access to match data. Checking session...");
+          return;
+        }
+
+        if (matchRes.ok) {
+          const mData = await matchRes.json();
+          setMatch(mData);
+          const pred = await predictMatchEnd(mData);
+          setPrediction(pred);
+          setPredLoading(false);
+        } else {
+          console.error("Match fetch failed:", matchRes.status);
+        }
+
+        if (transportRes.ok) {
+          const tData = await transportRes.json();
+          setTransport(Array.isArray(tData) ? tData : []);
+        } else {
+          console.error("Transport fetch failed:", transportRes.status);
+        }
       } catch (err) {
         console.error("Dashboard Fetch Error:", err);
       }

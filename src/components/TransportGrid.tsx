@@ -8,6 +8,14 @@ interface Props {
 }
 
 const TransportGrid: React.FC<Props> = ({ options }) => {
+  if (!Array.isArray(options)) {
+    return (
+      <div className="flex items-center justify-center p-12 bg-white rounded-[32px] border border-slate-100">
+        <p className="text-slate-400 font-bold uppercase tracking-widest">No transport data available</p>
+      </div>
+    );
+  }
+
   const getIcon = (type: string) => {
     switch (type) {
       case 'Metro': return Train;

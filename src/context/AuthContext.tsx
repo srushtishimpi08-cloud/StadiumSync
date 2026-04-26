@@ -21,7 +21,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch('/api/auth/me')
+    fetch('/api/auth/me', { credentials: 'include' })
       .then(res => res.json())
       .then(data => {
         if (data.user) setUser(data.user);
@@ -33,26 +33,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const res = await fetch('/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ email, stadium })
     });
     const data = await res.json();
-    if (res.ok) setUser({ email, name: data.user.name || 'Fan', stadium });
-    else throw new Error(data.message);
+    if (res.ok) setUser(data.user);
+    else throw new Error(data.message || 'Login failed');
   };
 
   const signup = async (name: string, email: string, password: string, stadium: string) => {
     const res = await fetch('/api/auth/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({ name, email, password, stadium })
     });
     const data = await res.json();
-    if (res.ok) setUser({ email, name, stadium });
-    else throw new Error(data.message);
+    if (res.ok) setUser(data.user);
+    else throw new Error(data.message || 'Signup failed');
   };
 
   const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' });
+    await fetch('/api/auth/logout', { method: 'POST', credentials: 'include' });
     setUser(null);
   };
 

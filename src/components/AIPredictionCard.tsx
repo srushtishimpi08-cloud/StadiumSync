@@ -14,7 +14,7 @@ interface Props {
 }
 
 const AIPredictionCard: React.FC<Props> = ({ prediction, loading }) => {
-  if (loading) {
+  if (loading || !prediction) {
     return (
       <div className="bg-white rounded-[32px] p-8 shadow-sm border border-slate-100 h-full flex flex-col justify-center items-center gap-4">
         <div className="w-10 h-10 border-[3px] border-indigo-600 border-t-transparent rounded-full animate-spin"></div>

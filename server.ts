@@ -4,7 +4,6 @@ import path from 'path';
 import fs from 'fs';
 import jwt from 'jsonwebtoken';
 import cookieParser from 'cookie-parser';
-import { GoogleGenAI } from "@google/genai";
 
 const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret-for-dev';
 
@@ -49,18 +48,30 @@ async function startServer() {
 
   // --- API Routes ---
   app.post('/api/auth/signup', (req, res) => {
-    const { email, password, stadium } = req.body;
+    console.log('Signup attempt:', req.body);
+    const { name, email, password, stadium } = req.body;
+    if (!email || !stadium) {
+      return res.status(400).json({ message: 'Email and stadium are required' });
+    }
     // Mock user storage
-    const token = jwt.sign({ email, stadium }, JWT_SECRET, { expiresIn: '24h' });
-    res.cookie('token', token, { httpOnly: true, sameSite: 'strict' });
-    res.json({ email, stadium, message: 'Signup successful' });
+    const user = { name: name || 'Fan', email, stadium };
+    const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
+    res.cookie('token', token, { httpOnly: true, sameSite: 'none', secure: true });
+    res.json({ user, message: 'Signup successful' });
   });
 
   app.post('/api/auth/login', (req, res) => {
+    console.log('Login attempt:', req.body);
     const { email, stadium } = req.body;
-    const token = jwt.sign({ email, stadium }, JWT_SECRET, { expiresIn: '24h' });
-    res.cookie('token', token, { httpOnly: true, sameSite: 'strict' });
-    res.json({ email, stadium, message: 'Login successful' });
+    if (!email || !stadium) {
+      return res.status(400).json({ message: 'Email and stadium are required' });
+    }
+    // In a real app we'd fetch the name; here we'll mock it
+    const name = email.split('@')[0] || 'Fan'; 
+    const user = { name, email, stadium };
+    const token = jwt.sign(user, JWT_SECRET, { expiresIn: '24h' });
+    res.cookie('token', token, { httpOnly: true, sameSite: 'none', secure: true });
+    res.json({ user, message: 'Login successful' });
   });
 
   app.post('/api/auth/logout', (req, res) => {
@@ -72,61 +83,11 @@ async function startServer() {
     res.json({ user: req.user });
   });
 
-  app.get('/api/match/live', (req, res) => {
+  app.get('/api/match/live', authenticateToken, (req, res) => {
     res.json(matchData);
   });
 
-  app.post('/api/ai/predict', async (req, res) => {
-    const { match } = req.body;
-    const apiKey = process.env.GEMINI_API_KEY;
-
-    // Fallback response if no API key
-    const fallbackResponse = {
-      estimatedEndTime: "10:45 PM",
-      recommendation: "Leave at 19th over",
-      delayProbability: "High",
-      impactSummary: "Match is reaching a tense finish. Expect massive congestion at Gate 4. Use the South Exit for a 15% faster commute."
-    };
-
-    if (!apiKey) {
-      return res.json(fallbackResponse);
-    }
-
-    try {
-      const ai = new GoogleGenAI({ apiKey });
-
-      const prompt = `
-        Match Context: ${JSON.stringify(match)}
-        Current Overs: ${match.score.overs}
-        Target: ${match.target}
-        Runs: ${match.score.runs}
-        Wickets: ${match.score.wickets}
-
-        As an AI Travel Assistant for an IPL Stadium, predict the match end time, suggest a leaving strategy to avoid crowd, and estimate delay probability.
-        Return ONLY a JSON object with:
-        {
-          "estimatedEndTime": "HH:MM PM",
-          "recommendation": "Short recommendation string",
-          "delayProbability": "Low" | "Medium" | "High",
-          "impactSummary": "A concise detailed summary"
-        }
-      `;
-
-      const response = await ai.models.generateContent({
-        model: "gemini-3-flash-preview",
-        contents: prompt
-      });
-
-      const text = response.text || "";
-      const cleaned = text.replace(/```json|```/g, '').trim();
-      res.json(JSON.parse(cleaned));
-    } catch (error) {
-      console.error("Gemini Error:", error);
-      res.json(fallbackResponse);
-    }
-  });
-
-  app.get('/api/transport/status', (req, res) => {
+  app.get('/api/transport/status', authenticateToken, (req, res) => {
     res.json([
       { id: 1, type: 'Metro', line: 'Yellow Line', direction: 'Huda City Centre', status: 'Arriving Early', eta: '4 mins', density: 'High' },
       { id: 2, type: 'Bus', number: '502', direction: 'Terminal 3', status: 'On Time', eta: '12 mins', density: 'Medium' },

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, Lock, Zap, MapPin } from 'lucide-react';
+import { X, Mail, Lock, Zap, MapPin, User } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useAuth } from '../context/AuthContext';
 
@@ -30,8 +30,8 @@ const AuthModal: React.FC<Props> = ({ isOpen, onClose }) => {
       if (isLogin) await login(email, stadium);
       else await signup(name, email, password, stadium);
       onClose();
-    } catch (error) {
-      alert('Auth failed. Please try again.');
+    } catch (error: any) {
+      alert(error.message || 'Auth failed. Please try again.');
     }
   };
 
@@ -67,10 +67,10 @@ const AuthModal: React.FC<Props> = ({ isOpen, onClose }) => {
                  <Zap size={32} fill="currentColor" />
               </div>
               <h2 className="text-2xl font-display font-bold text-slate-800">
-                {isLogin ? 'Welcome Back' : 'Join StadiumSync'}
+                StadiumSync
               </h2>
               <p className="text-sm text-slate-500 mt-2">
-                Choose your stadium and manage your travel
+                {isLogin ? 'Login to your account' : 'Join our fan community'}
               </p>
             </div>
 
@@ -79,7 +79,7 @@ const AuthModal: React.FC<Props> = ({ isOpen, onClose }) => {
                 <div className="space-y-2">
                   <label className="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Full Name</label>
                   <div className="relative">
-                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                     <input
                       type="text"
                       required
